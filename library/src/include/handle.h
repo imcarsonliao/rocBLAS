@@ -25,13 +25,13 @@ struct _rocblas_handle
     rocblas_status set_stream(hipStream_t stream);
     rocblas_status get_stream(hipStream_t* stream) const;
 
-    void* get_trsm_Y();
+    void* get_trsm_Y1();
+    void* get_trsm_Y2();
     void* get_trsm_invA();
     void* get_trsm_invA_C();
 
     void* get_trsv_x();
     void* get_trsv_alpha();
-
     rocblas_int device;
     hipDeviceProp_t device_properties;
 
@@ -45,7 +45,8 @@ struct _rocblas_handle
     rocblas_layer_mode layer_mode;
 
     // space allocated for trsm
-    void* trsm_Y      = nullptr;
+    void* trsm_Y1     = nullptr;
+    void* trsm_Y2     = nullptr;
     void* trsm_invA   = nullptr;
     void* trsm_invA_C = nullptr;
 
@@ -61,8 +62,10 @@ struct _rocblas_handle
 
 // work buffer size constants
 #define WORKBUF_TRSM_A_BLKS 10
-#define WORKBUF_TRSM_B_CHNK 32000
-#define WORKBUF_TRSM_Y_SZ (32000 * 128 * sizeof(double))
+#define WORKBUF_TRSM_B_CHNK1 32000
+#define WORKBUF_TRSM_B_CHNK2 45000
+#define WORKBUF_TRSM_Y1_SZ (WORKBUF_TRSM_B_CHNK1 * 128 * sizeof(double))
+#define WORKBUF_TRSM_Y2_SZ (WORKBUF_TRSM_B_CHNK2 * 128 * sizeof(double))
 #define WORKBUF_TRSM_INVA_SZ (128 * 128 * 10 * sizeof(double))
 #define WORKBUF_TRSM_INVA_C_SZ (128 * 128 * 10 * sizeof(double) / 2)
 #define WORKBUF_TRSV_X_SZ (131072 * sizeof(double))

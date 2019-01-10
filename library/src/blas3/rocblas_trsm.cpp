@@ -700,15 +700,19 @@ rocblas_status special_trsm_template(rocblas_handle handle,
     hipStream_t rocblas_stream;
     RETURN_IF_ROCBLAS_ERROR(rocblas_get_stream(handle, &rocblas_stream));
 
-    void* Y      = handle->get_trsm_Y();
+    void* Y      = NULL;
     void* invA   = handle->get_trsm_invA();
     void* invA_C = handle->get_trsm_invA_C();
-
+#if 0
     PRINT_IF_HIP_ERROR(
         hipMemsetAsync(invA, 0, BLOCK * BLOCK * WORKBUF_TRSM_A_BLKS * sizeof(T), rocblas_stream));
-
+#endif
     rocblas_int k = (side == rocblas_side_left ? m : n);
-    rocblas_trtri_trsm_template<T, BLOCK>(handle, (T*)invA_C, uplo, diag, k, A, lda, (T*)invA);
+#if 0
+    static int first = 1;
+    if(first++ == 1)
+#endif
+        rocblas_trtri_trsm_template<T, BLOCK>(handle, (T*)invA_C, uplo, diag, k, A, lda, (T*)invA);
 
     int R               = k / BLOCK;
     const T zero        = 0.0;
@@ -716,6 +720,15 @@ rocblas_status special_trsm_template(rocblas_handle handle,
     const T negtive_one = -1.0;
 
     rocblas_int bsize = (side == rocblas_side_left ? n : m);
+    int WORKBUF_TRSM_B_CHNK;
+    if (bsize <= WORKBUF_TRSM_B_CHNK1) {
+        WORKBUF_TRSM_B_CHNK = WORKBUF_TRSM_B_CHNK1; 
+        Y = handle->get_trsm_Y1();
+    }
+    else { 
+        WORKBUF_TRSM_B_CHNK = WORKBUF_TRSM_B_CHNK2;
+        Y = handle->get_trsm_Y2();
+    }
     int W             = 1 + ((bsize - 1) / WORKBUF_TRSM_B_CHNK);
 
     for(int w = 0; w < W; w++)

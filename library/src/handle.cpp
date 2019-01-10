@@ -31,7 +31,8 @@ _rocblas_handle::_rocblas_handle()
     }
 
     // allocate trsm temp buffers
-    THROW_IF_HIP_ERROR(hipMalloc(&trsm_Y, WORKBUF_TRSM_Y_SZ));
+    THROW_IF_HIP_ERROR(hipMalloc(&trsm_Y1, WORKBUF_TRSM_Y1_SZ));
+    THROW_IF_HIP_ERROR(hipMalloc(&trsm_Y2, WORKBUF_TRSM_Y2_SZ));
     THROW_IF_HIP_ERROR(hipMalloc(&trsm_invA, WORKBUF_TRSM_INVA_SZ));
     THROW_IF_HIP_ERROR(hipMalloc(&trsm_invA_C, WORKBUF_TRSM_INVA_C_SZ));
 
@@ -61,8 +62,11 @@ _rocblas_handle::~_rocblas_handle()
 {
     // rocblas by default take the system default stream which user cannot destroy
 
-    if(trsm_Y)
-        hipFree(trsm_Y);
+    if(trsm_Y1)
+        hipFree(trsm_Y1);
+
+    if(trsm_Y2)
+        hipFree(trsm_Y2);
 
     if(trsm_invA)
         hipFree(trsm_invA);
@@ -114,7 +118,8 @@ rocblas_status _rocblas_handle::get_stream(hipStream_t* stream) const
 }
 
 // trsm get pointers
-void* _rocblas_handle::get_trsm_Y() { return trsm_Y; }
+void* _rocblas_handle::get_trsm_Y1() { return trsm_Y1; }
+void* _rocblas_handle::get_trsm_Y2() { return trsm_Y2; }
 
 void* _rocblas_handle::get_trsm_invA() { return trsm_invA; }
 
@@ -124,3 +129,4 @@ void* _rocblas_handle::get_trsm_invA_C() { return trsm_invA_C; }
 void* _rocblas_handle::get_trsv_x() { return trsv_x; }
 
 void* _rocblas_handle::get_trsv_alpha() { return trsv_alpha; }
+

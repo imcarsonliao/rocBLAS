@@ -251,7 +251,7 @@ rocblas_status rocblas_trtri_trsm_template(rocblas_handle handle,
                            A,
                            lda,
                            invA);
-
+if(C_tmp!=NULL) {
         constexpr rocblas_int JB = IB * 2;
         rocblas_int stride_A     = NB * lda + NB;
         rocblas_int stride_invA  = NB * NB;
@@ -308,6 +308,7 @@ rocblas_status rocblas_trtri_trsm_template(rocblas_handle handle,
             JB,
             stride_C,
             blocks);
+}
 
     } // end if
 
@@ -324,7 +325,6 @@ rocblas_status rocblas_trtri_trsm_template(rocblas_handle handle,
                                                    invA + blocks * NB * NB,
                                                    NB);
     }
-
     return rocblas_status_success;
 }
 
