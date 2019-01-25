@@ -62,6 +62,104 @@ __device__ void trtri_device(rocblas_fill uplo,
 
     int tx = hipThreadIdx_x;
 
+    __shared__ T sA[NB * NB];  
+    T diagV = 1.0;
+
+    // read matrix A into shared memory, only need to read lower part
+    // its inverse will overwrite the shared memory
+
+    if(tx < n)
+    {
+        //if(uplo == rocblas_fill_lower)
+        //{
+            // compute only diagonal element
+            #pragma unroll
+            for(int i = 0; i < n; i++)
+            {
+                sA[tx + i * n] = A[tx + i * lda];
+            }
+
+
+        if(diag != rocblas_diagonal_unit)
+        { // inverse the diagonal
+            if(sA[tx + tx * n] != 0.0)
+            {
+                diagV = 1.0 / sA[tx + tx * n];
+            }
+        }
+        sA[tx + tx * n] = diagV;
+
+
+        __syncthreads(); // if NB < 64, this synch can be avoided on AMD Fiji
+
+        if(uplo == rocblas_fill_lower) {
+            for(int col = n-2; col >= 0; col--) {
+                T sum = 0;
+
+                if (tx > col) {
+                    for (int step = col + 1; step < n; step++) {
+                        sum -= sA[tx + step * n] * sA[step + col * n];
+                    } 
+                }
+
+                if (tx > col) {
+                    __syncthreads(); // if NB < 64, this synch can be avoided on AMD Fiji
+                    sA[tx + col * n] = sum * diagV;
+                }
+                __syncthreads(); // if NB < 64, this synch can be avoided on AMD Fiji
+            }
+
+
+            #pragma unroll 
+            for(int i = 0; i <= tx; i++)
+            {
+                invA[tx + i * ldinvA] = sA[tx + i * n];
+            }
+        }
+        else
+        {
+            for(int col = 1; col < n; col--) {
+                T sum = 0;
+
+                if (tx < col) {
+                    for (int step = 0; step < col; step++) {
+                       sum -= sA[tx + step * n] * sA[step + col * n];
+                    }
+                }
+
+                if (tx < col) {
+                    __syncthreads(); // if NB < 64, this synch can be avoided on AMD Fiji
+                    sA[tx + col * n] = sum * diagV;
+                }
+                __syncthreads(); // if NB < 64, this synch can be avoided on AMD Fiji
+            }
+
+            // transpose back to A from sA if upper
+            #pragma unroll
+            for(int i = n - 1; i >= tx; i--)
+            {
+                invA[tx + i * ldinvA] = sA[(n - 1 - tx) + (n - 1 - i) * n];
+            }
+        }
+    }
+}
+#if 0
+template <typename T, rocblas_int NB>
+__device__ void trtri_device(rocblas_fill uplo,
+                             rocblas_diagonal diag,
+                             rocblas_int n,
+                             const T* A,
+                             rocblas_int lda,
+                             T* invA,
+                             rocblas_int ldinvA)
+{
+
+    // quick return
+    if(n <= 0)
+        return;
+
+    int tx = hipThreadIdx_x;
+
     __shared__ T sA[NB * NB];
 
     // read matrix A into shared memory, only need to read lower part
@@ -71,7 +169,7 @@ __device__ void trtri_device(rocblas_fill uplo,
     {
         if(uplo == rocblas_fill_lower)
         {
-            // compute only diagonal element
+            // compute only diagonal element    
             for(int i = 0; i <= tx; i++)
             {
                 sA[tx + i * n] = A[tx + i * lda];
@@ -164,7 +262,7 @@ __device__ void trtri_device(rocblas_fill uplo,
         }
     }
 }
-
+#endif
 #define STRSM_BLOCK 128
 #define DTRSM_BLOCK 128
 
