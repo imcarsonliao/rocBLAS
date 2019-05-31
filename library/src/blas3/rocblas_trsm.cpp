@@ -669,6 +669,7 @@ void copy_block_unit(hipStream_t rocblas_stream,
     dim3 grid(blocksX, blocksY);
     dim3 threads(128, 2); 
 
+
     hipLaunchKernelGGL(copy_void_ptr_matrix_trsm,
                        grid,
                        threads,
