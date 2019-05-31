@@ -28,6 +28,8 @@ struct _rocblas_handle
     void* get_trsm_Y();
     void* get_trsm_invA();
     void* get_trsm_invA_C();
+    const size_t* get_trsm_A_blks() { return &WORKBUF_TRSM_A_BLKS; }
+    const size_t* get_trsm_B_chnk() { return &WORKBUF_TRSM_B_CHNK; }
 
     rocblas_int device;
     hipDeviceProp_t device_properties;
@@ -50,13 +52,16 @@ struct _rocblas_handle
     std::ofstream log_bench_ofs;
     std::ostream* log_trace_os;
     std::ostream* log_bench_os;
+
+    size_t WORKBUF_TRSM_B_CHNK;
+    size_t WORKBUF_TRSM_Y_SZ;
+    const size_t WORKBUF_TRSM_A_BLKS     = 10;
+    const size_t WORKBUF_TRSM_B_MIN_CHNK = 32000;
+    const size_t WORKBUF_TRSM_INVA_SZ    = 128 * 128 * 10 * sizeof(double);
+    const size_t WORKBUF_TRSM_INVA_C_SZ  = 128 * 128 * 10 * sizeof(double) / 2;
+    const size_t WORKBUF_TRSV_X_SZ       = 131072 * sizeof(double);
+    const size_t WORKBUF_TRSV_ALPHA_SZ   = sizeof(double);
 };
 
-// work buffer size constants
-#define WORKBUF_TRSM_A_BLKS 10
-#define WORKBUF_TRSM_B_CHNK 32000
-#define WORKBUF_TRSM_Y_SZ (32000 * 128 * sizeof(double))
-#define WORKBUF_TRSM_INVA_SZ (128 * 128 * 10 * sizeof(double))
-#define WORKBUF_TRSM_INVA_C_SZ (128 * 128 * 10 * sizeof(double) / 2)
 
 #endif
